@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>reqres.in/api — local clone explorer</title>
+<style>
+  :root {
+    --bg: #0b0f14; --panel: #11171e; --panel2: #0e141a; --line: #1d2833;
+    --text: #d7e2ea; --dim: #8195a5; --green: #3ecf8e; --get: #3ecf8e;
+    --post: #4f8ccf; --put: #c9a13c; --patch: #b06fd6; --delete: #e05252;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 14px/1.5 -apple-system, "Helvetica Neue", sans-serif; }
+  header { display: flex; justify-content: space-between; align-items: center;
+           padding: 18px 24px; border-bottom: 1px solid var(--line); }
+  header .brand { font-family: ui-monospace, Menlo, monospace; font-size: 15px; }
+  header .live { color: var(--green); font-size: 12px; letter-spacing: .08em; }
+  main { display: grid; grid-template-columns: 300px 1fr 1fr; gap: 20px;
+         padding: 20px 24px; align-items: start; }
+  .card { background: var(--panel); border: 1px solid var(--line);
+          border-radius: 10px; padding: 16px; }
+  h2 { margin: 4px 0 14px; font-size: 12px; letter-spacing: .12em; color: var(--dim); font-weight: 600; }
+  .group { font-size: 11px; letter-spacing: .12em; color: var(--dim); margin: 14px 0 6px; }
+  .ep { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
+        background: transparent; border: 1px solid var(--line); border-radius: 8px;
+        color: var(--text); padding: 8px 10px; margin: 6px 0; cursor: pointer; font: inherit; }
+  .ep:hover { border-color: #33546b; }
+  .ep.sel { border-color: var(--green); }
+  .ep .code { margin-left: auto; color: var(--dim); font-size: 12px; }
+  .m { font: 600 11px ui-monospace, monospace; padding: 2px 7px; border-radius: 5px; color: #0b0f14; }
+  .m.GET { background: var(--get); } .m.POST { background: var(--post); }
+  .m.PUT { background: var(--put); } .m.PATCH { background: var(--patch); }
+  .m.DELETE { background: var(--delete); }
+  .path { font-family: ui-monospace, Menlo, monospace; background: var(--panel2);
+          border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+  .reqline { display: flex; gap: 10px; align-items: center; }
+  .curlbox { position: relative; margin-top: 14px; }
+  .curlbox pre { background: var(--panel2); border: 1px solid var(--line); border-radius: 8px;
+                 padding: 10px 12px; margin: 6px 0 0; white-space: pre-wrap; font-size: 12.5px; }
+  .copy { position: absolute; top: 0; right: 0; background: none; border: none;
+          color: var(--green); cursor: pointer; font: inherit; font-size: 12px; }
+  .send { width: 100%; margin-top: 14px; background: var(--green); color: #06251a;
+          border: none; border-radius: 20px; padding: 10px; font-weight: 700;
+          font-size: 14px; cursor: pointer; }
+  .send:hover { filter: brightness(1.1); }
+  .resphead { display: flex; align-items: baseline; gap: 12px; }
+  .resphead .status { font: 700 13px ui-monospace, monospace; color: var(--green); }
+  .resphead .status.err { color: var(--delete); }
+  .resphead .ms { color: var(--dim); font-size: 12px; }
+  pre.body { background: var(--panel2); border: 1px solid var(--line); border-radius: 8px;
+             padding: 14px; margin-top: 12px; overflow: auto; max-height: 70vh;
+             font: 13px/1.55 ui-monospace, Menlo, monospace; }
+  .k { color: #7fd4ff; } .s { color: #a8e6a1; } .n { color: #f2c17a; } .b { color: #d5a6f0; } .z { color: var(--dim); }
+  .note { color: var(--dim); font-size: 12px; margin-top: 10px; }
+</style>
+</head>
+<body>
+<header>
+  <span class="brand">&#9678; reqres.in/api <span style="color:var(--dim)">&middot; local clone</span></span>
+  <span class="live">&#9679; LOCAL API, NO KEY NEEDED</span>
+</header>
+<main>
+  <div class="card" id="sidebar"><h2>ENDPOINTS</h2></div>
+
+  <div class="card">
+    <h2>REQUEST</h2>
+    <div class="path reqline"><span class="m" id="rm">GET</span><span id="rp">/api/users/2</span></div>
+    <div class="curlbox">
+      <h2 style="margin:16px 0 0">CURL</h2>
+      <button class="copy" id="copybtn">Copy</button>
+      <pre id="curl"></pre>
+    </div>
+    <button class="send" id="send">Send request</button>
+    <div class="note">The clone listens on the same origin as this page — no key, no network, offline-safe.</div>
+  </div>
+
+  <div class="card">
+    <div class="resphead"><h2 style="margin:4px 0">RESPONSE</h2>
+      <span class="status" id="status"></span><span class="ms" id="ms"></span></div>
+    <pre class="body" id="resp">// pick an endpoint and press "Send request"</pre>
+  </div>
+</main>
+
+<script>
+const ORIGIN = location.origin;
+const EPS = [
+ ['USERS', [
+  ['List users', 'GET', '/api/users?page=2'],
+  ['Single user', 'GET', '/api/users/2'],
+  ['User not found', 'GET', '/api/users/23', 404],
+  ['Create user', 'POST', '/api/users', 201, {name:'morpheus', job:'leader'}],
+  ['Update (PUT)', 'PUT', '/api/users/2', 200, {name:'janet', job:'leader'}],
+  ['Update (PATCH)', 'PATCH', '/api/users/2', 200, {job:'lecturer'}],
+  ['Delete user', 'DELETE', '/api/users/2', 204],
+  ['Delayed response', 'GET', '/api/users?delay=3'],
+ ]],
+ ['RESOURCES', [
+  ['List resource', 'GET', '/api/unknown'],
+  ['Single resource', 'GET', '/api/unknown/2'],
+  ['Resource not found', 'GET', '/api/unknown/23', 404],
+ ]],
+ ['PRODUCTS', [['List products', 'GET', '/api/products']]],
+ ['AUTH', [
+  ['Register (success)', 'POST', '/api/register', 200, {email:'eve.holt@reqres.in', password:'cityslicka'}],
+  ['Register (unsuccessful)', 'POST', '/api/register', 400, {email:'eve.holt@reqres.in'}],
+  ['Login (success)', 'POST', '/api/login', 200, {email:'eve.holt@reqres.in', password:'cityslicka'}],
+  ['Login (unsuccessful)', 'POST', '/api/login', 400, {email:'peter@harold.com'}],
+ ]],
+];
+let cur = null;
+
+const sb = document.getElementById('sidebar');
+for (const [group, items] of EPS) {
+  const h = document.createElement('div'); h.className = 'group'; h.textContent = group; sb.appendChild(h);
+  for (const ep of items) {
+    const b = document.createElement('button'); b.className = 'ep';
+    b.innerHTML = `<span class="m ${ep[1]}">${ep[1]}</span><span>${ep[0]}</span>` +
+                  (ep[3] ? `<span class="code">${ep[3]}</span>` : '');
+    b.onclick = () => { cur = ep; render(); for (const x of sb.querySelectorAll('.ep')) x.classList.remove('sel'); b.classList.add('sel'); };
+    sb.appendChild(b);
+  }
+}
+
+function urlOf(ep) { return ORIGIN + ep[2]; }
+function render() {
+  document.getElementById('rm').className = 'm ' + cur[1];
+  document.getElementById('rm').textContent = cur[1];
+  document.getElementById('rp').textContent = cur[2];
+  const body = cur[4];
+  document.getElementById('curl').textContent =
+    `curl \\\n  "${urlOf(cur)}"` +
+    (cur[1] !== 'GET' ? ` \\\n  -X ${cur[1]}` : '') +
+    (body ? ` \\\n  -H 'Content-Type: application/json' \\\n  -d '${JSON.stringify(body).replace(/'/g, `'\\''`)}'` : '');
+  document.getElementById('resp').textContent = '// press "Send request"';
+  document.getElementById('status').textContent = '';
+  document.getElementById('ms').textContent = '';
+}
+document.getElementById('copybtn').onclick = () => {
+  navigator.clipboard && navigator.clipboard.writeText(document.getElementById('curl').textContent);
+  document.getElementById('copybtn').textContent = 'Copied';
+  setTimeout(() => document.getElementById('copybtn').textContent = 'Copy', 1200);
+};
+
+function hl(json) {
+  const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  return esc(JSON.stringify(json, null, 2))
+    .replace(/("(?:[^"\\]|\\.)*")\s*:/g, '<span class="k">$1</span>:')
+    .replace(/: ("(?:[^"\\]|\\.)*")/g, ': <span class="s">$1</span>')
+    .replace(/\b(-?\d+\.?\d*(?:e-?\d+)?)\b/gi, '<span class="n">$1</span>')
+    .replace(/\b(true|false)\b/g, '<span class="b">$1</span>')
+    .replace(/\bnull\b/g, '<span class="z">null</span>');
+}
+
+document.getElementById('send').onclick = async () => {
+  if (!cur) return;
+  const t0 = performance.now();
+  try {
+    const opt = { method: cur[1] };
+    if (cur[4]) { opt.headers = {'Content-Type': 'application/json'}; opt.body = JSON.stringify(cur[4]); }
+    const r = await fetch(urlOf(cur), opt);
+    const txt = await r.text();
+    const ms = Math.round(performance.now() - t0);
+    const st = document.getElementById('status');
+    st.textContent = r.status + ' ' + r.statusText;
+    st.className = 'status' + (r.status >= 400 ? ' err' : '');
+    document.getElementById('ms').textContent = ms + ' ms';
+    let shown;
+    try { shown = hl(JSON.parse(txt || 'null')); }
+    catch (e) { shown = txt === '' ? '// empty body (204)' : escHtml(txt); }
+    document.getElementById('resp').innerHTML = shown;
+  } catch (e) {
+    document.getElementById('status').textContent = 'FETCH FAILED';
+    document.getElementById('status').className = 'status err';
+    document.getElementById('resp').textContent = String(e);
+  }
+};
+function escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;');}
+
+// open on "Single user" like the real site does
+sb.querySelectorAll('.ep')[1].click();
+</script>
+</body>
+</html>

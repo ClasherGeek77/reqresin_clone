@@ -11,9 +11,10 @@ Endpoints (parity with reqres.in docs):
     GET    /api/users?delay=2         same, server sleeps 2s first
     GET    /api/users?unknown=...     empty data list
     GET    /api/users/{1..12}         single user + support
-    GET    /api/users/other           {} (200, empty object)
+    GET    /api/users/other           404 {} (like live)
     POST   /api/users {name,job}      -> {name, job, id, createdAt}
     PUT    /api/users/{id}            -> {name, job, updatedAt}
+    PATCH  /api/users/{id}            -> same as PUT (like live)
     DELETE /api/users/{id}            -> 204 empty
     GET    /api/user-list?delay=2     list, 10/page
     GET    /api/unknown               color list
@@ -106,6 +107,9 @@ class ReqResHandler(BaseHTTPRequestHandler):
         path = url.path.rstrip('/')
 
         if path in ('', '/'):
+            self._serve_ui()
+            return
+        if path == '/api':
             self._send(200, self._index())
             return
         if path == '/api/users':
@@ -165,6 +169,8 @@ class ReqResHandler(BaseHTTPRequestHandler):
             return
         self._send(404, {})
 
+    do_PATCH = do_PUT
+
     def do_DELETE(self):
         path = urlparse(self.path).path.rstrip('/')
         if path.startswith('/api/users/'):
@@ -214,7 +220,20 @@ class ReqResHandler(BaseHTTPRequestHandler):
             if row['id'] == rid:
                 self._send(200, {'data': row, 'support': data.SUPPORT})
                 return
-        self._send(200, {})  # reqres answers 200 with an empty object for unknown ids
+        self._send(404, {})  # "User/Resource not found" — 404 + empty body, like live
+
+    def _serve_ui(self):
+        import os
+        f = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'ui.html')
+        if not os.path.isfile(f):
+            self._send(200, self._index())
+            return
+        body = open(f, 'rb').read()
+        self.send_response(200)
+        self.send_header('Content-Type', 'text/html; charset=utf-8')
+        self.send_header('Content-Length', str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
 
     def _index(self):
         return {
