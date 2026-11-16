@@ -128,6 +128,9 @@ class ReqResHandler(BaseHTTPRequestHandler):
         if path == '/api/products':
             self._send(200, data.PRODUCTS)
             return
+        if path.startswith('/img/faces/'):
+            self._serve_avatar(path)
+            return
         if path == '/api/support':
             self._send(200, {'text': data.SUPPORT['text'], 'url': data.SUPPORT['url']})
             return
@@ -178,6 +181,27 @@ class ReqResHandler(BaseHTTPRequestHandler):
         if not password:
             return 400, {'error': 'Missing password'}
         return None, None
+
+    def _serve_avatar(self, path):
+        # /img/faces/<id>-image.jpg — mirrors reqres.in asset layout, local files only
+        import os
+        import re
+        m = re.match(r'^/img/faces/(\d+)-image\.jpg$', path)
+        if not m:
+            self._send(404, None)
+            return
+        f = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'img', 'faces', '%s-image.jpg' % m.group(1))
+        if not os.path.isfile(f):
+            self._send(404, None)
+            return
+        with open(f, 'rb') as fh:
+            body = fh.read()
+        self.send_response(200)
+        self.send_header('Content-Type', 'image/jpeg')
+        self.send_header('Content-Length', str(len(body)))
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.end_headers()
+        self.wfile.write(body)
 
     def _single(self, rows, path, kind):
         tail = path.rsplit('/', 1)[-1]
