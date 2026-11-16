@@ -158,7 +158,11 @@ class ReqResHandler(BaseHTTPRequestHandler):
             if err is not None:
                 self._send(status, err)
                 return
-            self._send(200, {'token': data.TOKEN, 'support': data.SUPPORT})
+            if path == '/api/register':
+                # live reqres parity: register answers {"id": 4, "token": ...}
+                self._send(200, {'id': CREATED_ID, 'token': data.TOKEN, 'support': data.SUPPORT})
+            else:
+                self._send(200, {'token': data.TOKEN, 'support': data.SUPPORT})
             return
         self._send(404, {})
 
