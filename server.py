@@ -3,7 +3,7 @@
 
 Pure stdlib (Python 3.8+, runs on this Catalina box's system python3), zero deps.
 
-    python3 server.py                 # http://localhost:8080/api
+    python3 server.py                 # http://localhost:40000/api
     python3 server.py --port 8000
 
 Endpoints (parity with reqres.in docs):
@@ -248,7 +248,7 @@ class ReqResHandler(BaseHTTPRequestHandler):
 def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument('--host', default='localhost')
-    ap.add_argument('--port', type=int, default=8080)
+    ap.add_argument('--port', type=int, default=40000)
     args = ap.parse_args()
     httpd = ThreadingHTTPServer((args.host, args.port), ReqResHandler)
     print('reqres clone on http://%s:%d/api  (Ctrl-C to stop)' % (args.host, args.port))
