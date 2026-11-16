@@ -35,7 +35,8 @@ from urllib.parse import parse_qs, urlparse
 
 import data
 
-created_seq = [12]  # POST /api/users ids continue from 13
+CREATED_ID = '4'  # live reqres parity: POST /api/users always answers id "4",
+                  # fully stateless — nothing is remembered server-side.
 
 def now_iso():
     return datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3].replace('+00:00', 'Z')
@@ -148,9 +149,8 @@ class ReqResHandler(BaseHTTPRequestHandler):
         path = url.path.rstrip('/')
         body = self._read_json()
         if path == '/api/users':
-            created_seq[0] += 1
             out = dict(body)
-            out.update({'id': str(created_seq[0]), 'createdAt': now_iso()})
+            out.update({'id': CREATED_ID, 'createdAt': now_iso()})
             self._send(201, out)
             return
         if path in ('/api/register', '/api/login'):
