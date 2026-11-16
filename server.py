@@ -60,7 +60,10 @@ def users_query(qs):
         res = user_page(1)
         res['data'] = []
         return res
-    page = max(int(qs.get('page', ['1'])[0] or 1), 1)
+    try:
+        page = max(int(qs.get('page', ['1'])[0] or 1), 1)
+    except (TypeError, ValueError):
+        page = 1
     if page > 2:  # reqres clamps: out-of-range page returns page N with empty slice
         res = user_page(page)
         res['data'] = []
