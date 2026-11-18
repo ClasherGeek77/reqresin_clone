@@ -94,7 +94,7 @@ all under `http://localhost:40000`.
 | --- | --- |
 | `GET /` | the explorer page |
 | `GET /api` | small JSON index of the endpoints |
-| `GET /api/users?page=1` | users 1-6; `page=2` users 7-12; `total` 12, `total_pages` 2; page 3 or higher: empty `data`; a non-numeric page counts as 1 |
+| `GET /api/users?page=1` | users 1-6; `page=2` users 7-12; `total` 12, `total_pages` 2, plus a `support` block like the real reqres.in; page 3 or higher: empty `data`; a non-numeric page counts as 1 |
 | `GET /api/users?delay=2` | same list after a 2 second sleep (capped at 30) |
 | `GET /api/users?<anything else>` | empty `data` list |
 | `GET /api/users/1` .. `/12` | `{"data": {...}, "support": {...}}` |

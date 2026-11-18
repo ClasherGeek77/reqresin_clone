@@ -50,6 +50,7 @@ def user_page(page, per_page=None, total_pages=None):
         'total': len(data.USERS),
         'total_pages': total_pages or ((len(data.USERS) + per_page - 1) // per_page),
         'data': data.USERS[start:start + per_page],
+        'support': data.SUPPORT,
     }
 
 def users_query(qs):
