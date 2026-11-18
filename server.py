@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Local clone of https://reqres.in/ — the classic documented API contract.
 
-Pure stdlib (Python 3.8+, runs on this Catalina box's system python3), zero deps.
+Pure stdlib (Python 3.8+), zero deps.
 
     python3 server.py                 # http://localhost:40000/api
     python3 server.py --port 8000
